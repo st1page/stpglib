@@ -1,2 +1,2 @@
 # stpglib
-some C wheel
+some C wheels
