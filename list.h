@@ -5,14 +5,14 @@
 #include "rc_ptr.h"
 
 typedef struct ListNode{
-    RCPtr(ListNode) pre;
-    RCPtr(ListNode) nxt;
+    ListNode* pre;
+    ListNode* nxt;
     void *val;
 }ListNode;
 
 typedef struct List{
-    RCPtr(ListNode) head;
-    RCPtr(ListNode) tail;
+    ListNode* head;
+    ListNode* tail;
     size_t len;
     void *(*dup)(void *ptr);
     void (*free)(void *ptr);
@@ -31,10 +31,12 @@ void listAddNodeTail(List *list, void *val);
 void listAddNodeAfter(List *list, void *val, ListNode *pre_node);
 void listRemoveNode(List *list, ListNode *node);
 
-//查找用函数 符合要求的节点返回1 否则返回0
-typedef int (*FilterFun)(ListNode*);
+void listForeach(List *list, void (*fun)(void *));
 
-void listFindFirstNode(List *list, FilterFun);
-void listFindNodesList(List *list, FilterFun);
+//符合要求的节点返回1 否则返回0
+typedef int (*FilterFun)(ListNode*);
+void listForeachFilter(List *list, FilterFun, void (*fun)(void *));
+// first 
+void listFindNode(List *list, FilterFun);
 
 #endif //LIST_H
