@@ -5,8 +5,8 @@
 #include "rc_ptr.h"
 
 typedef struct ListNode{
-    ListNode* pre;
-    ListNode* nxt;
+    struct ListNode* pre;
+    struct ListNode* nxt;
     void *val;
 }ListNode;
 
@@ -14,7 +14,6 @@ typedef struct List{
     ListNode* head;
     ListNode* tail;
     size_t len;
-    void *(*dup)(void *ptr);
     void (*free)(void *ptr);
 }List;
 
@@ -35,8 +34,8 @@ void listForeach(List *list, void (*fun)(void *));
 
 //符合要求的节点返回1 否则返回0
 typedef int (*FilterFun)(ListNode*);
-void listForeachFilter(List *list, FilterFun, void (*fun)(void *));
+void listForeachFilter(List *list, FilterFun filter, void (*fun)(void *));
 // first 
-void listFindNode(List *list, FilterFun);
+ListNode* listFindNode(List *list, FilterFun filter);
 
 #endif //LIST_H
