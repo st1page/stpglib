@@ -7,4 +7,6 @@
 extern void *rcMalloc(size_t size);
 extern void rcRetain(void *ptr);
 extern void rcFree(void *ptr);
+extern size_t rcSize(void *ptr);
+extern size_t rcUsedMem();
 #endif //RC_PTR_H
