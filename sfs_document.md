@@ -54,7 +54,6 @@ start|size| description
 ### Record metadata
 start|size| description
 ------|----|----
-00| 4B| the size of record metadata
 04| 4B| the number of fields
 08| 1B*fieldsNum | the length/type of fields 
 
