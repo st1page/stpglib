@@ -7,7 +7,7 @@
 typedef struct SFSVarchar{
     uint32_t size;
     char buf[];
-}Varchar;
+}SFSVarchar;
 
 typedef struct SFSFileHdr{
     uint16_t magic;
@@ -47,5 +47,4 @@ SFSFileHdr* sfsFileSave(char *fileName);
 char *sfsErrMsg();
 
 #endif
-
 
