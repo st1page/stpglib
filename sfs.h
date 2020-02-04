@@ -5,46 +5,57 @@
 #include <stdint.h>
 
 typedef struct SFSVarchar{
-    uint32_t size;
+    uint32_t len; /* length of the varchar string */
     char buf[];
 }SFSVarchar;
 
-typedef struct SFSFileHdr{
-    uint16_t magic;
-    uint8_t version;
-    uint8_t pad1[1];
-    uint32_t crc;
-    uint32_t size;
-    uint8_t pad2[4];
-    uint8_t tableNum;
-    uint8_t pad3[3];
-    uint32_t tableOffset[16];
-}SFSFileHdr;
-
 typedef struct SFSTableHdr{
-    uint32_t size;
-    uint32_t freeSpace;
-    uint32_t varcharNum;
-    uint32_t lastVarcharOffset;
-    uint32_t recordNum;
-    uint32_t recordMetaOffset;
+    uint32_t size;              /* size of the table */
+    uint32_t freeSpace;         /* free space left in the table */
+    uint32_t varcharNum;        /* number of varchars in the table */
+    uint32_t lastVarcharOffset; /* offset of the latest inserted varchar */
+    uint32_t recordNum;         /* number of record in the table */
+    uint32_t recordSize;        /* size of a record */
+    uint32_t recordMetaOffset;  /* offset of the fields info (a varchar)*/
+    char buf[];
 }SFSTableHdr;
 
+typedef struct SFSFileHdr{
+    uint16_t magic;     /* sfs magic number */
+    uint8_t version;    /* sfs version number of the file */
+    uint8_t pad1[1];    /* reserved */
+    uint32_t crc;       /* CRC32 checksum of the file */
+    uint32_t size;      /* size of the file */
+    uint8_t pad2[4];    /* reserved */
+    uint8_t tableNum;   /* number of tables int the file (not more than 16)*/
+    uint8_t pad3[3];    /* reserved */
+    uint32_t tableOffset[16]; /* offset of tables */
+    char buf[];
+}SFSFileHdr;
 
-void sfsVarcharNew(char *dst, uint32_t size, char* src);
 
-void sfsTablewNew(char *dst, uint32_t size, uint32_t fieldNum, uint8_t* fields);
-void* sfsTableNewRecord(SFSTableHdr *table);
-// return the offset measured from the start of table 
-uint32_t sfsTableNewVarchar(SFSTableHdr *table, uint32_t size);
+inline uint32_t sfsPtrOffset(void *x, void *y){
+    return (char*)y > (char*)x ?
+            (char*)y - (char*)x:
+            (char*)x - (char*)y;
+}
 
-SFSTableHdr* sfsFileNewTable(SFSFileHdr *file);
-SFSFileHdr* sfsFileCreate(uint32_t size);
-SFSFileHdr* sfsFileRelease();
+int sfsVarcharCons(SFSVarchar *varchar, uint32_t varcharSize, const char* src);
+SFSVarchar* sfsVarcharCreate(uint32_t varcharSize, const char* src);
+int sfsVarcharRelease(SFSVarchar *varchar);
+
+int sfsTablewCons(SFSTableHdr *table, uint32_t storSize, SFSVarchar *fieldMeta);
+void* sfsTableAddRecord(SFSTableHdr *table);
+SFSVarchar* sfsTablAddVarchar(SFSTableHdr *table, uint32_t varcharSize, const char* src);
+
+SFSTableHdr* sfsFileAddTable(SFSFileHdr *file, uint32_t storSize, SFSVarchar *fieldMeta);
+SFSFileHdr* sfsFileCreate();
 SFSFileHdr* sfsFileLoad(char *fileName);
-SFSFileHdr* sfsFileSave(char *fileName);
+void sfsFileRelease(SFSFileHdr* sfsFile);
+void sfsFileSave(char *fileName, SFSFileHdr* sfsFile);
 
-char *sfsErrMsg();
+// return the last err
+char *sfsErrMsg(); 
 
 #endif
 

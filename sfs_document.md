@@ -44,17 +44,18 @@ The "offset" is measured from the start of the table
 
 start|size| description
 ------|----|----|
-00| 4B| total size of the Table
+00| 4B| total size of the Table( include the table header)
 04| 4B| Free space left in the table
 08| 4B| Number of Varchars in the table
 0c| 4B| The last Varchar's offset
 10| 4B| Number of Records in the table
-14| 4B| Record metadata offset
+14| 4B| size of a record
+18| 4B| Record metadata offset
 
 ### Record metadata
 start|size| description
 ------|----|----
-04| 4B| the number of fields
+04| 4B | the number of fields
 08| 1B*fieldsNum | the length/type of fields 
 
 the length of fields is a unsigned int8 means the Bytes of the fields  
