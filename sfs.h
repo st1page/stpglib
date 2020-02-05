@@ -33,21 +33,14 @@ typedef struct SFSFileHdr{
     char buf[];
 }SFSFileHdr;
 
-
-inline uint32_t sfsPtrOffset(void *x, void *y){
-    return (char*)y > (char*)x ?
-            (char*)y - (char*)x:
-            (char*)x - (char*)y;
-}
-
-int sfsVarcharCons(SFSVarchar *varchar, uint32_t varcharSize, const char* src);
+int sfsVarcharCons(SFSVarchar *varchar, const char* src);
 SFSVarchar* sfsVarcharCreate(uint32_t varcharSize, const char* src);
 int sfsVarcharRelease(SFSVarchar *varchar);
 
 int sfsTablewCons(SFSTableHdr *table, uint32_t storSize, SFSVarchar *fieldMeta);
 void* sfsTableAddRecord(SFSTableHdr *table);
 SFSVarchar* sfsTablAddVarchar(SFSTableHdr *table, uint32_t varcharSize, const char* src);
-
+uint32_t sfsTableVarcharOffset(SFSTableHdr *table, SFSVarchar *varchar);
 SFSTableHdr* sfsFileAddTable(SFSFileHdr *file, uint32_t storSize, SFSVarchar *fieldMeta);
 SFSFileHdr* sfsFileCreate();
 SFSFileHdr* sfsFileLoad(char *fileName);
