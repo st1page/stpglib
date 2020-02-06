@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-char *errmsg;
+char *errmsg = "";
 
 inline uint32_t _ptrOffset(void *x, void *y){
     return (char*)y > (char*)x ?
@@ -13,7 +13,9 @@ inline uint32_t _ptrOffset(void *x, void *y){
 inline void* _offsetPtr(void* x, uint32_t y){
     return (char*)x + y;
 }
-
+inline void* _negOffsetPtr(void* x, uint32_t y){
+    return (char*)x - y;
+}
 int sfsVarcharCons(SFSVarchar *varchar, const char* src){
     memcpy(varchar->buf, src, varchar->len);
     return 1;
@@ -49,12 +51,29 @@ inline SFSVarchar* _getrecordMeta(SFSTableHdr *table){
 }
 //TODO
 int sfsTablewCons(SFSTableHdr *table, uint32_t storSize, SFSVarchar *recordMeta){
-
+    table->size = _calcTableSize(storSize, recordMeta);
+    table->freeSpace = storSize;
+    table->varcharNum = -1; // to insert recordMeta
+    table->recordNum = 0;
+    table->size = _calcRecordSize(recordMeta);
+    table->lastVarcharOffset = table->size;
+    sfsTableAddVarchar(table, recordMeta->len, recordMeta->buf);
+    table->recordMetaOffset = table->lastVarcharOffset;
     return 1;
 }
 
-void* sfsTableAddRecord(SFSTableHdr *table);
-SFSVarchar* sfsTablAddVarchar(SFSTableHdr *table, uint32_t varcharSize, const char* src);
+void* sfsTableAddRecord(SFSTableHdr *table){
+    void* retPtr = _offsetPtr(table->buf, table->recordNum * table->recordSize);
+    table->recordNum++;
+    return retPtr;
+}
+SFSVarchar* sfsTableAddVarchar(SFSTableHdr *table, uint32_t varcharLen, const char* src){
+    SFSVarchar *retPtr = _OffsetPtr(table->buf, table->lastVarcharOffset);
+    retPtr = _negOffsetPtr(retPtr, varcharLen+sizeof(SFSVarchar));
+    table->lastVarcharOffset = retPtr;
+    table->varcharNum++;
+    return retPtr;
+}
 
 SFSTableHdr* sfsFileAddTable(SFSFileHdr *file, uint32_t storSize, SFSVarchar *recordMeta);
 SFSFileHdr* sfsFileCreate();

@@ -37,11 +37,11 @@ int sfsVarcharCons(SFSVarchar *varchar, const char* src);
 SFSVarchar* sfsVarcharCreate(uint32_t varcharSize, const char* src);
 int sfsVarcharRelease(SFSVarchar *varchar);
 
-int sfsTablewCons(SFSTableHdr *table, uint32_t storSize, SFSVarchar *fieldMeta);
+int sfsTablewCons(SFSTableHdr *table, uint32_t storSize, SFSVarchar *recordMeta);
 void* sfsTableAddRecord(SFSTableHdr *table);
-SFSVarchar* sfsTablAddVarchar(SFSTableHdr *table, uint32_t varcharSize, const char* src);
+SFSVarchar* sfsTableAddVarchar(SFSTableHdr *table, uint32_t varcharLen, const char* src);
 uint32_t sfsTableVarcharOffset(SFSTableHdr *table, SFSVarchar *varchar);
-SFSTableHdr* sfsFileAddTable(SFSFileHdr *file, uint32_t storSize, SFSVarchar *fieldMeta);
+SFSTableHdr* sfsFileAddTable(SFSFileHdr *file, uint32_t storSize, SFSVarchar *recordMeta);
 SFSFileHdr* sfsFileCreate();
 SFSFileHdr* sfsFileLoad(char *fileName);
 void sfsFileRelease(SFSFileHdr* sfsFile);
