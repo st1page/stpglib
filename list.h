@@ -2,7 +2,6 @@
 #define LIST_H
 
 #include <stddef.h>
-#include "rc_ptr.h"
 
 typedef struct ListNode{
     struct ListNode* pre;
