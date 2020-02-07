@@ -75,7 +75,22 @@ SFSVarchar* sfsTableAddVarchar(SFSTableHdr *table, uint32_t varcharLen, const ch
     return retPtr;
 }
 
-SFSTableHdr* sfsFileAddTable(SFSFileHdr *file, uint32_t storSize, SFSVarchar *recordMeta);
+SFSTableHdr* sfsFileAddTable(SFSFileHdr *file, uint32_t storSize, SFSVarchar *recordMeta){
+    uint32_t tableSize = _calcTableSize(storSize, recordMeta);
+    uint32_t tableOffset;
+    if(file->tableNum) {
+        tableOffset = file->tableOffset[file->tableNum - 1];
+        SFSTableHdr *lastTable = _offsetPtr(file, tableOffset);
+        tableOffset += lastTable->size;
+    } else tableOffset = sizeof(SFSFileHdr);
+    SFSTableHdr *table = _offsetPtr(file, tableOffset);
+    sfsTablewCons(table, storSize, recordMeta);
+
+    file->size += tableSize;
+    file->tableNum++;
+    file->tableOffset[file->tableNum - 1] = tableOffset;
+    return table;
+}
 SFSFileHdr* sfsFileCreate();
 SFSFileHdr* sfsFileLoad(char *fileName);
 void sfsFileRelease(SFSFileHdr* sfsFile);
