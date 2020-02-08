@@ -15,15 +15,14 @@ The "offset" is measured from the start of the file
 
 start|size| description
 ------|----|----
-00| 2B| Magic number(0x534653aa,SFS.)
-02| 1B| Version number
-03| 1B| Pad byte
-04| 4B| CRC-32
-08| 4B| FIle size
-0c| 4B| Reserved
-10| 1B| The number of tables
-11| 3B| Pad bytes
-14|64B| tables offset(uint32[16])
+00| 4B| Magic number(0x534653aa,SFS.)
+04| 4B| Version number
+08| 4B| CRC-32
+0c| 4B| FIle size
+10| 4B| Reserved
+14| 1B| The number of tables
+15| 3B| Pad bytes
+18|64B| tables offset(uint32[16])
 
 ### Table 
 

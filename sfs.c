@@ -2,7 +2,12 @@
 
 #include <stdlib.h>
 #include <string.h>
+
+#define MAGIC (0x534653aa)
+#define VERSION (1)
+
 char *errmsg = "";
+
 
 inline uint32_t _ptrOffset(void *x, void *y){
     return (char*)y > (char*)x ?
@@ -49,7 +54,6 @@ inline int _calcTableSize(uint32_t storeSize, SFSVarchar *recordMeta){
 inline SFSVarchar* _getrecordMeta(SFSTableHdr *table){
     return (SFSVarchar*)((char*)table + table->recordMetaOffset);
 }
-//TODO
 int sfsTablewCons(SFSTableHdr *table, uint32_t storSize, SFSVarchar *recordMeta){
     table->size = _calcTableSize(storSize, recordMeta);
     table->freeSpace = storSize;
@@ -68,9 +72,9 @@ void* sfsTableAddRecord(SFSTableHdr *table){
     return retPtr;
 }
 SFSVarchar* sfsTableAddVarchar(SFSTableHdr *table, uint32_t varcharLen, const char* src){
-    SFSVarchar *retPtr = _OffsetPtr(table->buf, table->lastVarcharOffset);
+    SFSVarchar *retPtr = _offsetPtr(table->buf, table->lastVarcharOffset);
     retPtr = _negOffsetPtr(retPtr, varcharLen+sizeof(SFSVarchar));
-    table->lastVarcharOffset = retPtr;
+    table->lastVarcharOffset = _ptrOffset(retPtr, table);
     table->varcharNum++;
     return retPtr;
 }
@@ -86,15 +90,26 @@ SFSTableHdr* sfsFileAddTable(SFSFileHdr *file, uint32_t storSize, SFSVarchar *re
     SFSTableHdr *table = _offsetPtr(file, tableOffset);
     sfsTablewCons(table, storSize, recordMeta);
 
-    file->size += tableSize;
     file->tableNum++;
     file->tableOffset[file->tableNum - 1] = tableOffset;
     return table;
 }
-SFSFileHdr* sfsFileCreate();
+SFSFileHdr* sfsFileCreate(uint32_t storSize){
+    SFSFileHdr *file = (SFSFileHdr*)malloc(sizeof(SFSFileHdr)+storSize);
+    file->magic = MAGIC;
+    file->version = VERSION;
+    file->size = sizeof(SFSFileHdr)+storSize;
+    file->tableNum = 0;
+    return file;
+}
+void sfsFileRelease(SFSFileHdr* file){
+    free(file);
+}
+void sfsFileSave(char *fileName, SFSFileHdr* sfsFile){
+    
+}
 SFSFileHdr* sfsFileLoad(char *fileName);
-void sfsFileRelease(SFSFileHdr* sfsFile);
-void sfsFileSave(char *fileName, SFSFileHdr* sfsFile);
+
 
 // return the lastest err
 char *sfsErrMsg(){

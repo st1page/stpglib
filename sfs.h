@@ -21,9 +21,8 @@ typedef struct SFSTableHdr{
 }SFSTableHdr;
 
 typedef struct SFSFileHdr{
-    uint16_t magic;     /* sfs magic number */
-    uint8_t version;    /* sfs version number of the file */
-    uint8_t pad1[1];    /* reserved */
+    uint32_t magic;     /* sfs magic number */
+    uint32_t version;    /* sfs version number of the file */
     uint32_t crc;       /* CRC32 checksum of the file */
     uint32_t size;      /* size of the file */
     uint8_t pad2[4];    /* reserved */
@@ -42,7 +41,7 @@ void* sfsTableAddRecord(SFSTableHdr *table);
 SFSVarchar* sfsTableAddVarchar(SFSTableHdr *table, uint32_t varcharLen, const char* src);
 uint32_t sfsTableVarcharOffset(SFSTableHdr *table, SFSVarchar *varchar);
 SFSTableHdr* sfsFileAddTable(SFSFileHdr *file, uint32_t storSize, SFSVarchar *recordMeta);
-SFSFileHdr* sfsFileCreate();
+SFSFileHdr* sfsFileCreate(uint32_t storSize);
 SFSFileHdr* sfsFileLoad(char *fileName);
 void sfsFileRelease(SFSFileHdr* sfsFile);
 void sfsFileSave(char *fileName, SFSFileHdr* sfsFile);
