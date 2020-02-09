@@ -50,19 +50,20 @@ int sfsVarcharCons(SFSVarchar *varchar, const char* src);
 SFSVarchar* sfsVarcharCreate(uint32_t varcharSize, const char* src);
 int sfsVarcharRelease(SFSVarchar *varchar);
 
-int sfsTablewCons(SFSTableHdr *table, uint32_t storSize, SFSVarchar *recordMeta);
-int sfsTablewCreate(SFSTableHdr *table, uint32_t storSize, SFSVarchar *recordMeta);
-int sfsTablewRelease(SFSTableHdr *table, uint32_t storSize, SFSVarchar *recordMeta);
+int sfsTableCons(SFSTableHdr *table, uint32_t initStorSize, SFSVarchar *recordMeta);
+int sfsTableCreate(SFSTableHdr *table, uint32_t initStorSize, SFSVarchar *recordMeta);
+int sfsTableRelease(SFSTableHdr *table);
+int sfsTableReserve(SFSTableHdr *table, uint32_t storSize);
 
 void* sfsTableAddRecord(SFSTableHdr *table);
 SFSVarchar* sfsTableAddVarchar(SFSTableHdr *table, uint32_t varcharLen, const char* src);
 uint32_t sfsTableVarcharOffset(SFSTableHdr *table, SFSVarchar *varchar);
 
-SFSFileHdr* sfsFileCreate(uint32_t storSize);
-SFSFileHdr* sfsFileCreateLoad(char *fileName);
-void sfsFileRelease(SFSFileHdr* sfsFile);
-void sfsFileSave(char *fileName, SFSFileHdr* sfsFile);
-SFSTableHdr* sfsFileAddTable(SFSFileHdr *file, uint32_t storSize, SFSVarchar *recordMeta);
+SFSDatabase* sfsDatabaseCreate(uint32_t storSize);
+SFSDatabase* sfsDatabaseCreateLoad(char *fileName);
+void sfsDatabaseRelease(SFSDatabase* db);
+void sfsDatabaseSave(char *fileName, SFSDatabase* db);
+SFSTableHdr* sfsDatabaseAddTable(SFSDatabase *db, uint32_t storSize, SFSVarchar *recordMeta);
 
 
 // return the last err
