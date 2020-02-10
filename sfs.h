@@ -50,10 +50,11 @@ int sfsVarcharCons(SFSVarchar *varchar, const char* src);
 SFSVarchar* sfsVarcharCreate(uint32_t varcharSize, const char* src);
 int sfsVarcharRelease(SFSVarchar *varchar);
 
-int sfsTableCons(SFSTableHdr *table, uint32_t initStorSize, SFSVarchar *recordMeta);
-int sfsTableCreate(SFSTableHdr *table, uint32_t initStorSize, SFSVarchar *recordMeta);
+int sfsTableCons(SFSTableHdr *table, uint32_t initStorSize, const SFSVarchar *recordMeta, SFSDatabase *db);
+SFSTableHdr* sfsTableCreate(uint32_t initStorSize, const SFSVarchar *recordMeta, SFSDatabase *db);
 int sfsTableRelease(SFSTableHdr *table);
-int sfsTableReserve(SFSTableHdr *table, uint32_t storSize);
+void sfsTableForeach(SFSTableHdr *table, void (*fun)(void*));
+SFSTableHdr* sfsTableReserve(SFSTableHdr *table, uint32_t storSize);
 
 void* sfsTableAddRecord(SFSTableHdr *table);
 SFSVarchar* sfsTableAddVarchar(SFSTableHdr *table, uint32_t varcharLen, const char* src);

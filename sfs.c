@@ -3,22 +3,22 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAGIC (0x534653aa)
-#define VERSION (1)
+#define MAGIC   (0x534653aa)
+#define VERSION (0x01000000)
 
 char *errmsg = "";
 
 
-inline uint32_t _ptrOffset(void *x, void *y){
+inline uint32_t ptrOffset(void *x, void *y){
     return (char*)y > (char*)x ?
             (char*)y - (char*)x:
             (char*)x - (char*)y;
 }
 
-inline void* _offsetPtr(void* x, uint32_t y){
+inline void* offsetPtr(void* x, uint32_t y){
     return (char*)x + y;
 }
-inline void* _negOffsetPtr(void* x, uint32_t y){
+inline void* negOffsetPtr(void* x, uint32_t y){
     return (char*)x - y;
 }
 int sfsVarcharCons(SFSVarchar *varchar, const char* src){
@@ -38,7 +38,7 @@ int sfsVarcharRelease(SFSVarchar *varchar){
     return 1;
 }
 
-inline int _calcRecordSize(SFSVarchar *recordMeta){
+inline int calcRecordSize(const SFSVarchar *recordMeta){
     uint32_t recordSize = 0;
     for(int i=0; i<recordMeta->len; i++){
         uint8_t x = (uint8_t)recordMeta->buf[i];
@@ -47,34 +47,61 @@ inline int _calcRecordSize(SFSVarchar *recordMeta){
     return recordSize;
 }
 
-inline int _calcTableSize(uint32_t storeSize, SFSVarchar *recordMeta){
+inline int calcTableSize(uint32_t storeSize, const SFSVarchar *recordMeta){
     return sizeof(SFSTableHdr) + storeSize + sizeof(SFSVarchar) + recordMeta->len;
 }
 
-inline SFSVarchar* _getrecordMeta(SFSTableHdr *table){
+inline SFSVarchar* getRecordMeta(SFSTableHdr *table){
     return (SFSVarchar*)((char*)table + table->recordMetaOffset);
 }
-int sfsTablewCons(SFSTableHdr *table, uint32_t storSize, SFSVarchar *recordMeta){
-    table->size = _calcTableSize(storSize, recordMeta);
-    table->freeSpace = storSize;
+int sfsTableCons(SFSTableHdr *table, 
+                uint32_t initStorSize, 
+                const SFSVarchar *recordMeta,
+                SFSDatabase *db){
+    table->size = calcTableSize(initStorSize, recordMeta);
+    table->freeSpace = initStorSize;
     table->varcharNum = -1; // to insert recordMeta
     table->recordNum = 0;
-    table->size = _calcRecordSize(recordMeta);
+    table->recordSize = calcRecordSize(recordMeta);
     table->lastVarcharOffset = table->size;
     sfsTableAddVarchar(table, recordMeta->len, recordMeta->buf);
     table->recordMetaOffset = table->lastVarcharOffset;
+    table->database.ptr = db;
     return 1;
 }
 
+SFSTableHdr* sfsTableCreate(uint32_t initStorSize, 
+                const SFSVarchar *recordMeta,
+                SFSDatabase *db){
+    uint32_t tableSize = calcTableSize(initStorSize, recordMeta); 
+    SFSTableHdr *table = malloc(tableSize);
+    sfsTableCons(table, initStorSize, recordMeta, db);
+    return table;
+}
+int sfsTableRelease(SFSTableHdr *table){
+    free(table);
+    return 1;
+}
+//TODO
+void sfsTableForeach(SFSTableHdr *table, void (*fun)(void*)){
+
+}
+SFSTableHdr* sfsTableReserve(SFSTableHdr *table, uint32_t storSize){
+    uint32_t newTableSize = calcTableSize(storSize, getRecordMeta(table));
+    uint32_t oldTableSize = table->size;
+    if(newTableSize <= oldTableSize) return table;
+    // TODO
+}
+
 void* sfsTableAddRecord(SFSTableHdr *table){
-    void* retPtr = _offsetPtr(table->buf, table->recordNum * table->recordSize);
+    void* retPtr = offsetPtr(table->buf, table->recordNum * table->recordSize);
     table->recordNum++;
     return retPtr;
 }
 SFSVarchar* sfsTableAddVarchar(SFSTableHdr *table, uint32_t varcharLen, const char* src){
-    SFSVarchar *retPtr = _offsetPtr(table->buf, table->lastVarcharOffset);
-    retPtr = _negOffsetPtr(retPtr, varcharLen+sizeof(SFSVarchar));
-    table->lastVarcharOffset = _ptrOffset(retPtr, table);
+    SFSVarchar *retPtr = offsetPtr(table->buf, table->lastVarcharOffset);
+    retPtr = negOffsetPtr(retPtr, varcharLen+sizeof(SFSVarchar));
+    table->lastVarcharOffset = ptrOffset(retPtr, table);
     table->varcharNum++;
     return retPtr;
 }
