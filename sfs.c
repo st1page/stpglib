@@ -40,7 +40,7 @@ int sfsVarcharRelease(SFSVarchar *varchar){
 
 inline int calcRecordSize(const SFSVarchar *recordMeta){
     uint32_t recordSize = 0;
-    for(int i=0; i<recordMeta->len; i++){
+    for(int i=0; i < recordMeta->len; i++){
         uint8_t x = (uint8_t)recordMeta->buf[i];
         recordSize += x ? x: 0;        
     }
@@ -51,7 +51,7 @@ inline int calcTableSize(uint32_t storeSize, const SFSVarchar *recordMeta){
     return sizeof(SFSTableHdr) + storeSize + sizeof(SFSVarchar) + recordMeta->len;
 }
 
-inline SFSVarchar* getRecordMeta(SFSTableHdr *table){
+inline const SFSVarchar* getRecordMeta(SFSTableHdr *table){
     return (SFSVarchar*)((char*)table + table->recordMetaOffset);
 }
 int sfsTableCons(SFSTableHdr *table, 
@@ -82,15 +82,77 @@ int sfsTableRelease(SFSTableHdr *table){
     free(table);
     return 1;
 }
-//TODO
-void sfsTableForeach(SFSTableHdr *table, void (*fun)(void*)){
-
-}
 SFSTableHdr* sfsTableReserve(SFSTableHdr *table, uint32_t storSize){
     uint32_t newTableSize = calcTableSize(storSize, getRecordMeta(table));
     uint32_t oldTableSize = table->size;
     if(newTableSize <= oldTableSize) return table;
-    // TODO
+    uint32_t deltaOffset = newTableSize - oldTableSize;
+    SFSTableHdr *newTable = sfsTableCreate(storSize, getRecordMeta(table), table->database.ptr);
+    
+    memcpy(newTable, table, sizeof(SFSTableHdr) + table->recordNum * table->recordSize);
+    uint32_t tailLen = table->size - table->lastVarcharOffset;
+    memcpy(offsetPtr(newTable, newTableSize - tailLen),
+            offsetPtr(table, table->lastVarcharOffset),
+            tailLen);
+    
+    newTable->freeSpace += deltaOffset;
+    newTable->lastVarcharOffset += deltaOffset;
+    newTable->recordMetaOffset += deltaOffset;
+    
+    const SFSVarchar *recordMeta = getRecordMeta(newTable);
+    char* st = newTable->buf;
+    for(int i=0; i < recordMeta->len; i++){
+        uint8_t type = (uint8_t)recordMeta->buf[i];
+        if(type){
+            st = offsetPtr(st, type);
+        } else {
+            uint32_t *cur = (uint32_t*)st;
+            for(uint32_t j=0; j < newTable->recordNum; j++){
+                *cur += deltaOffset;
+                cur = offsetPtr(cur, newTable->recordSize);
+            }
+            st = offsetPtr(st, 4);
+        }
+    }    
+    
+    free(table);
+    (newTable->database.ptr)->size += deltaOffset;
+    return newTable;
+}
+inline void recordVarcharToOffset(SFSTableHdr *table, void *record){
+    const SFSVarchar *recordMeta = getRecordMeta(table);
+    uint32_t *cur = (uint32_t*)record;
+    for(int i=0; i < recordMeta->len; i++){
+        uint8_t type = (uint8_t)recordMeta->buf[i];
+        if(type){
+            cur = offsetPtr(cur, type);
+        } else {
+            *cur = ptrOffset(table, (void *)(*cur) );
+            cur = offsetPtr(cur, 4);
+        }
+    }    
+}
+inline void recordVarcharToPtr(SFSTableHdr *table, void *record){
+    const SFSVarchar *recordMeta = getRecordMeta(table);
+    uint32_t *cur = (uint32_t*)record;
+    for(int i=0; i < recordMeta->len; i++){
+        uint8_t type = (uint8_t)recordMeta->buf[i];
+        if(type){
+            cur = offsetPtr(cur, type);
+        } else {
+            *cur = offsetPtr(table, *cur);
+            cur = offsetPtr(cur, 4);
+        }
+    }    
+}
+void sfsTableForeach(SFSTableHdr *table, void (*fun)(void*)){
+    void* record = table->buf;
+    for(int i = 0; i < table->recordNum; i++){
+        recordVarcharToPtr(table, record);
+        fun(record);
+        recordVarcharToOffset(table, record);
+        record = offsetPtr(record, table->recordSize);
+    }
 }
 
 void* sfsTableAddRecord(SFSTableHdr *table){
@@ -114,7 +176,7 @@ SFSTableHdr* sfsFileAddTable(SFSFileHdr *file, uint32_t storSize, SFSVarchar *re
         SFSTableHdr *lastTable = _offsetPtr(file, tableOffset);
         tableOffset += lastTable->size;
     } else tableOffset = sizeof(SFSFileHdr);
-    SFSTableHdr *table = _offsetPtr(file, tableOffset);
+    SFSTableHdr *table = offsetPtr(file, tableOffset);
     sfsTablewCons(table, storSize, recordMeta);
 
     file->tableNum++;
