@@ -26,8 +26,8 @@ typedef struct SFSTableHdr{
 
 typedef struct SFSDatabase{
     uint32_t magic;     /* sfs magic number */
-    uint32_t version;    /* sfs version number of the file */
     uint32_t crc;       /* CRC32 checksum of the file */
+    uint32_t version;    /* sfs version number of the file */
     uint32_t size;      /* size of the file */
     uint8_t tableNum;   /* number of tables int the file (not more than 16)*/
     uint8_t pad[3];    /* reserved */
