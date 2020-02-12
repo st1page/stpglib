@@ -58,13 +58,12 @@ SFSTableHdr* sfsTableReserve(SFSTableHdr *table, uint32_t storSize);
 void sfsTableForeach(SFSTableHdr *table, void (*fun)(void*));
 void* sfsTableAddRecord(SFSTableHdr *table);
 SFSVarchar* sfsTableAddVarchar(SFSTableHdr *table, uint32_t varcharLen, const char* src);
-uint32_t sfsTableVarcharOffset(SFSTableHdr *table, SFSVarchar *varchar);
 
 SFSDatabase* sfsDatabaseCreate(uint32_t storSize);
 SFSDatabase* sfsDatabaseCreateLoad(char *fileName);
 void sfsDatabaseRelease(SFSDatabase* db);
 void sfsDatabaseSave(char *fileName, SFSDatabase* db);
-SFSTableHdr* sfsDatabaseAddTable(SFSDatabase *db, uint32_t storSize, SFSVarchar *recordMeta);
+SFSTableHdr* sfsDatabaseAddTable(SFSDatabase *db, uint32_t storSize, const SFSVarchar *recordMeta);
 
 
 // return the last err

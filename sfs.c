@@ -182,37 +182,31 @@ SFSVarchar* sfsTableAddVarchar(SFSTableHdr *table, uint32_t varcharLen, const ch
     return retPtr;
 }
 
-SFSTableHdr* sfsFileAddTable(SFSFileHdr *file, uint32_t storSize, SFSVarchar *recordMeta){
-    uint32_t tableSize = _calcTableSize(storSize, recordMeta);
-    uint32_t tableOffset;
-    if(file->tableNum) {
-        tableOffset = file->tableOffset[file->tableNum - 1];
-        SFSTableHdr *lastTable = _offsetPtr(file, tableOffset);
-        tableOffset += lastTable->size;
-    } else tableOffset = sizeof(SFSFileHdr);
-    SFSTableHdr *table = offsetPtr(file, tableOffset);
-    sfsTablewCons(table, storSize, recordMeta);
+SFSDatabase* sfsDatabaseCreate(uint32_t storSize){
+    SFSDatabase *db = malloc(sizeof(SFSDatabase)+storSize);
+    db->magic = MAGIC;
+    db->version = VERSION;
+    db->size = sizeof(SFSDatabase)+storSize;
+    db->tableNum = 0;
+    return db;
+}
+void sfsDatabaseRelease(SFSDatabase* db){
+    for(int i=0; i<db->tableNum; i++){
+        sfsTableRelease(db->table[i].ptr);
+    }
+    free(db);
+}
+void sfsDatabaseSave(char *fileName, SFSDatabase* db);
+SFSDatabase* sfsDatabaseCreateLoad(char *fileName);
 
-    file->tableNum++;
-    file->tableOffset[file->tableNum - 1] = tableOffset;
+SFSTableHdr* sfsDatabaseAddTable(SFSDatabase *db, uint32_t initStorSize, const SFSVarchar *recordMeta){
+    if(initStorSize == 0) initStorSize = 16 * calcRecordSize(recordMeta);
+    uint32_t tableSize = calcTableSize(initStorSize, recordMeta);
+    SFSTableHdr *table = sfsTableCreate(initStorSize, recordMeta, db);
+    db->table[db->tableNum].ptr = table;
+    db->tableNum++;
     return table;
 }
-SFSFileHdr* sfsFileCreate(uint32_t storSize){
-    SFSFileHdr *file = (SFSFileHdr*)malloc(sizeof(SFSFileHdr)+storSize);
-    file->magic = MAGIC;
-    file->version = VERSION;
-    file->size = sizeof(SFSFileHdr)+storSize;
-    file->tableNum = 0;
-    return file;
-}
-void sfsFileRelease(SFSFileHdr* file){
-    free(file);
-}
-void sfsFileSave(char *fileName, SFSFileHdr* sfsFile){
-    
-}
-SFSFileHdr* sfsFileLoad(char *fileName);
-
 
 // return the lastest err
 char *sfsErrMsg(){
