@@ -1,5 +1,4 @@
 #include "crc32.h"
-
 static const uint32_t crc32Tab[] = { 
   0x00000000L, 0x77073096L, 0xee0e612cL,
         0x990951baL, 0x076dc419L, 0x706af48fL, 0xe963a535L, 0x9e6495a3L,
@@ -55,7 +54,19 @@ static const uint32_t crc32Tab[] = {
         0xc30c8ea1L, 0x5a05df1bL, 0x2d02ef8dL
 
 };
+uint32_t crc = 0xFFFFFFFFL;
 
+void muti_crc32_init(){
+    crc = 0xFFFFFFFFL;
+}
+void muti_crc32_update(const unsigned char *buf, uint32_t len){
+    for (uint32_t i=0; i<len; i++) {
+        crc = crc32Tab[ (crc^buf[i]) & 0xff] ^ (crc>>8);
+    }
+}
+uint32_t muti_crc32_get(){
+    return crc ^ 0xFFFFFFFFL;
+}
 uint32_t crc32(const unsigned char *buf, uint32_t len){
     uint32_t crc = 0xffffffff;
     for (uint32_t i=0; i<len; i++) {
@@ -68,6 +79,12 @@ uint32_t crc32(const unsigned char *buf, uint32_t len){
 #include <stdio.h>
 int main() {
     printf("%08x\n",crc32((unsigned char*)"123456789",9));
+
+    muti_crc32_init();
+    muti_crc32_update((unsigned char*)"123",3);
+    muti_crc32_update((unsigned char*)"456",3);
+    muti_crc32_update((unsigned char*)"789",3);
+    printf("%08x\n",muti_crc32_get());
 
     return 0;
 }
