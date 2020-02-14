@@ -1,5 +1,8 @@
 #include "sfs.h"
 
+#include "crc32.h"
+
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -196,7 +199,30 @@ void sfsDatabaseRelease(SFSDatabase* db){
     }
     free(db);
 }
-void sfsDatabaseSave(char *fileName, SFSDatabase* db);
+int sfsDatabaseSave(char *fileName, SFSDatabase* db){
+    uint32_t tableOffset = sizeof(SFSDatabase);
+    SFSTableHdr* table[16];
+    for(int i=0; i < db->tableNum; i++){
+        table[i] = db->table[i].ptr;
+        sfsTableForeach(table[i], recordVarcharToOffset);
+        db->table[i].offset = tableOffset;
+        table[i]->database.offset = tableOffset;
+        tableOffset += table[i]->size;
+    }
+
+    muti_crc32_init();
+    muti_crc32_update(&(db->version), sizeof(SFSDatabase));
+    for(int i=0; i < db->tableNum; i++) muti_crc32_update(table[i], table[i]->size);
+    db->crc = muti_crc32_get();
+
+    FILE *fp = fopen(fileName, "wb");
+
+    fwrite(db, sizeof(SFSDatabase), 1, fp);
+    for(int i=0; i < db->tableNum; i++) {
+        fwrite(table[i], table[i]->size, 1, fp);
+    }
+    fclose(fp);
+}
 SFSDatabase* sfsDatabaseCreateLoad(char *fileName);
 
 SFSTableHdr* sfsDatabaseAddTable(SFSDatabase *db, uint32_t initStorSize, const SFSVarchar *recordMeta){
