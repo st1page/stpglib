@@ -5,6 +5,8 @@
         "crc32.h": "c",
         "stdint.h": "c",
         "cstdint": "c",
-        "greatest.h": "c"
+        "greatest.h": "c",
+        "stdlib.h": "c",
+        "assert.h": "c"
     }
 }
