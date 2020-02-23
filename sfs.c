@@ -9,8 +9,7 @@
 #define MAGIC   (0x534653aa)
 #define VERSION (0x01000000)
 
-char *errmsg = "";
-
+char errmsg[8192];
 
 inline uint32_t ptrOffset(void *x, void *y){
     return (char*)y > (char*)x ?
@@ -199,7 +198,18 @@ void sfsDatabaseRelease(SFSDatabase* db){
     }
     free(db);
 }
+
 int sfsDatabaseSave(char *fileName, SFSDatabase* db){
+    if(strlen(fileName) > 4096) {
+        sprintf(errmsg, "file name is too long, is .4096%s", fileName);
+        return 0;
+    }
+    FILE *fp = fopen(fileName, "wb");
+    if(!fp){
+        int errnum = errno;
+        sprintf(errmsg, "error in open file: %s, file name is %s",strerror(errnum), fileName);
+        return 0;
+    }
     uint32_t tableOffset = sizeof(SFSDatabase);
     SFSTableHdr* table[16];
     for(int i=0; i < db->tableNum; i++){
@@ -215,15 +225,62 @@ int sfsDatabaseSave(char *fileName, SFSDatabase* db){
     for(int i=0; i < db->tableNum; i++) muti_crc32_update(table[i], table[i]->size);
     db->crc = muti_crc32_get();
 
-    FILE *fp = fopen(fileName, "wb");
 
     fwrite(db, sizeof(SFSDatabase), 1, fp);
     for(int i=0; i < db->tableNum; i++) {
         fwrite(table[i], table[i]->size, 1, fp);
     }
     fclose(fp);
+
+    for(int i=0; i < db->tableNum; i++){
+        db->table[i].ptr = table[i];
+        sfsTableForeach(table[i], recordVarcharToPtr);
+        table[i]->database.ptr = db;
+    }
+    
+    return 1;
 }
-SFSDatabase* sfsDatabaseCreateLoad(char *fileName);
+SFSDatabase* sfsDatabaseCreateLoad(char *fileName){
+    if(strlen(fileName) > 4096) {
+        sprintf(errmsg, "file name is too long, is .4096%s", fileName);
+        return NULL;
+    }
+    FILE *fp = fopen(fileName, "rb");
+    if(!fp){
+        int errnum = errno;
+        sprintf(errmsg, "error in open file: %s, file name is %s",strerror(errnum), fileName);
+        return NULL;    
+    }
+
+    
+    uint32_t magic = 0;
+    fread(&magic, sizeof(uint32_t), 1, fp);
+    if(magic!=MAGIC) {
+        sprintf(errmsg, "the file %s is not a sfs file", fileName);
+        return NULL;
+    }
+
+    fseek(fp, 0L, SEEK_END);
+    uint32_t fileSize = ftell(fp);
+    
+    SFSDatabase * db = malloc(fileSize);
+    fseek(fp, 0L, SEEK_SET);
+    fread(&db, fileSize, 1, fp);
+
+    uint32_t crc = crc32(&(db->version), fileSize - 2*sizeof(uint32_t));
+    if(crc != db->crc){
+        sprintf(errmsg, "the file crc is wrong, file name is %s", fileName);
+        free(db);
+        return NULL;
+    }
+
+    for(int i=0; i < db->tableNum; i++){
+        db->table[i].ptr = offsetPtr(db, db->table[i].offset);
+        sfsTableForeach(db->table[i].ptr, recordVarcharToPtr);
+        db->table[i].ptr->database.ptr = db;
+    }
+
+}
 
 SFSTableHdr* sfsDatabaseAddTable(SFSDatabase *db, uint32_t initStorSize, const SFSVarchar *recordMeta){
     if(initStorSize == 0) initStorSize = 16 * calcRecordSize(recordMeta);
