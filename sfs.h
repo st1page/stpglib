@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 typedef struct SFSVarchar{
-    uint32_t len; /* length of the varcha r string */
+    uint32_t len; /* length of the varchar string */
     char buf[];
 }SFSVarchar;
 
