@@ -11,16 +11,16 @@
 
 char errmsg[8192];
 
-inline uint32_t ptrOffset(void *x, void *y){
+uint32_t ptrOffset(void *x, void *y){
     return (char*)y > (char*)x ?
             (char*)y - (char*)x:
             (char*)x - (char*)y;
 }
 
-inline void* offsetPtr(void* x, uint32_t y){
+void* offsetPtr(void* x, uint32_t y){
     return (char*)x + y;
 }
-inline void* negOffsetPtr(void* x, uint32_t y){
+void* negOffsetPtr(void* x, uint32_t y){
     return (char*)x - y;
 }
 int sfsVarcharCons(SFSVarchar *varchar, const char* src){
@@ -40,7 +40,7 @@ int sfsVarcharRelease(SFSVarchar *varchar){
     return 1;
 }
 
-inline uint32_t calcRecordSize(const SFSVarchar *recordMeta){
+uint32_t calcRecordSize(const SFSVarchar *recordMeta){
     uint32_t recordSize = 0;
     for(int i=0; i < recordMeta->len; i++){
         uint8_t x = (uint8_t)recordMeta->buf[i];
@@ -49,15 +49,15 @@ inline uint32_t calcRecordSize(const SFSVarchar *recordMeta){
     return recordSize;
 }
 
-inline int calcTableSize(uint32_t storeSize, const SFSVarchar *recordMeta){
+int calcTableSize(uint32_t storeSize, const SFSVarchar *recordMeta){
     return sizeof(SFSTableHdr) + storeSize + sizeof(SFSVarchar) + recordMeta->len;
 }
 
-inline const SFSVarchar* getRecordMeta(SFSTableHdr *table){
+const SFSVarchar* getRecordMeta(SFSTableHdr *table){
     return (SFSVarchar*)((char*)table + table->recordMetaOffset);
 }
 
-inline const uint32_t getStorSize(SFSTableHdr *table){
+const uint32_t getStorSize(SFSTableHdr *table){
     return table->size - sizeof(SFSTableHdr) - sizeof(SFSVarchar) - getRecordMeta(table)->len;
 }
 int sfsTableCons(SFSTableHdr *table, 
@@ -127,7 +127,7 @@ SFSTableHdr* sfsTableReserve(SFSTableHdr *table, uint32_t storSize){
     (newTable->database.ptr)->size += deltaOffset;
     return newTable;
 }
-inline void recordVarcharToOffset(SFSTableHdr *table, void *record){
+void recordVarcharToOffset(SFSTableHdr *table, void *record){
     const SFSVarchar *recordMeta = getRecordMeta(table);
     uint32_t *cur = (uint32_t*)record;
     for(int i=0; i < recordMeta->len; i++){
@@ -140,7 +140,7 @@ inline void recordVarcharToOffset(SFSTableHdr *table, void *record){
         }
     }    
 }
-inline void recordVarcharToPtr(SFSTableHdr *table, void *record){
+void recordVarcharToPtr(SFSTableHdr *table, void *record){
     const SFSVarchar *recordMeta = getRecordMeta(table);
     uint32_t *cur = (uint32_t*)record;
     for(int i=0; i < recordMeta->len; i++){
@@ -160,7 +160,7 @@ void sfsTableForeach(SFSTableHdr *table, void (*fun)(SFSTableHdr*, void*)){
         record = offsetPtr(record, table->recordSize);
     }
 }
-inline SFSTableHdr* tableExpand(SFSTableHdr *table, uint32_t addSize){
+SFSTableHdr* tableExpand(SFSTableHdr *table, uint32_t addSize){
     uint32_t oldSize = getStorSize(table);
     uint32_t newSize;
     if(oldSize + table->freeSpace < addSize) newSize = oldSize *2;
@@ -295,6 +295,3 @@ SFSTableHdr* sfsDatabaseAddTable(SFSDatabase *db, uint32_t initStorSize, const S
 char *sfsErrMsg(){
     return errmsg;  
 }
-
-
-
