@@ -44,7 +44,7 @@ uint32_t calcRecordSize(const SFSVarchar *recordMeta){
     uint32_t recordSize = 0;
     for(int i=0; i < recordMeta->len; i++){
         uint8_t x = (uint8_t)recordMeta->buf[i];
-        recordSize += x ? x: 0;        
+        recordSize += x ? x: 4;        
     }
     return recordSize;
 }
@@ -57,7 +57,7 @@ const SFSVarchar* getRecordMeta(SFSTableHdr *table){
     return (SFSVarchar*)((char*)table + table->recordMetaOffset);
 }
 
-const uint32_t getStorSize(SFSTableHdr *table){
+uint32_t getStorSize(SFSTableHdr *table){
     return table->size - sizeof(SFSTableHdr) - sizeof(SFSVarchar) - getRecordMeta(table)->len;
 }
 int sfsTableCons(SFSTableHdr *table, 
@@ -177,8 +177,10 @@ void* sfsTableAddRecord(SFSTableHdr *table){
 }
 SFSVarchar* sfsTableAddVarchar(SFSTableHdr *table, uint32_t varcharLen, const char* src){
     if(table->freeSpace < table->recordSize) tableExpand(table, varcharLen + sizeof(SFSVarchar));
-    SFSVarchar *retPtr = offsetPtr(table->buf, table->lastVarcharOffset);
+    SFSVarchar *retPtr = offsetPtr(table, table->lastVarcharOffset);
     retPtr = negOffsetPtr(retPtr, varcharLen+sizeof(SFSVarchar));
+    retPtr->len = varcharLen;
+    memcpy(retPtr->buf, src, varcharLen);
     table->lastVarcharOffset = ptrOffset(retPtr, table);
     table->varcharNum++;
     return retPtr;

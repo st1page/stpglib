@@ -42,15 +42,45 @@ static enum greatest_test_res tableDestory(){
     PASS();
 }
 
-TEST tableRAII(void) {
-    CHECK_CALL(talbeAinit()); /* <3 */
-    CHECK_CALL(tableDestory()); /* </3 */
+TEST tableInitTest(void) {
+    initStorSize = ArecordSize * 5;
+    CHECK_CALL(talbeAinit()); 
+    ASSERT_EQ_FMT(ArecordSize, table->recordSize, "%d");
+    ASSERT_EQ_FMT(initStorSize, table->freeSpace, "%d");
+    ASSERT_EQ_FMT(0, table->recordNum, "%d");
+    ASSERT_EQ_FMT(0, table->varcharNum, "%d");
+    ASSERT_EQ_FMT(table->lastVarcharOffset, table->recordMetaOffset, "%d");
+    ASSERT_EQ_FMT(sizeof(AMeta_c), table->size - table->recordMetaOffset, "%d");
+    ASSERT_MEM_EQ(AMeta_c, (char*)table + table->recordMetaOffset , sizeof(AMeta_c));
+    CHECK_CALL(tableDestory()); 
+    PASS();
+}
+TEST tableStaticMem(void) {
+    initStorSize = ArecordSize * 5;
+    uint32_t storSize = initStorSize;
+    CHECK_CALL(talbeAinit()); 
+
+    A* addrs[5];
+    for(int i=0;i<5;i++){
+        ASSERT_EQ_FMT(storSize, table->freeSpace, "%d");
+        addrs[i] = sfsTableAddRecord(table);
+        storSize -= ArecordSize;
+        ASSERT_EQ_FMT(i+1, table->recordNum, "%d");
+    }
+    ASSERT_EQ_FMT(0, table->freeSpace, "%d");
+    ASSERT_EQ_FMT(0, (char*)addrs[0] - (char*)table->buf, "%d");
+    for(int i=1;i<5;i++){
+        ASSERT_EQ_FMT(ArecordSize, (char*)addrs[i] - (char*)addrs[i-1], "%d");
+    }
+    ASSERT_EQ_FMT(ArecordSize, table->lastVarcharOffset - ((char*)addrs[4] - (char*)table) , "%d");
+
+    CHECK_CALL(tableDestory()); 
     PASS();
 }
 
 SUITE(table_suite) {
-    initStorSize = ArecordSize * 5;
-    RUN_TEST(tableRAII);
+    RUN_TEST(tableInitTest);
+    RUN_TEST(tableStaticMem);
 
 
 }
