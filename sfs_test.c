@@ -42,8 +42,8 @@ static enum greatest_test_res tableDestory(){
     PASS();
 }
 
-TEST tableInitTest(void) {
-    initStorSize = ArecordSize * 5;
+TEST tableInitTest(uint32_t StorSize) {
+    initStorSize = StorSize;
     CHECK_CALL(talbeAinit()); 
     ASSERT_EQ_FMT(ArecordSize, table->recordSize, "%d");
     ASSERT_EQ_FMT(initStorSize, table->freeSpace, "%d");
@@ -55,7 +55,7 @@ TEST tableInitTest(void) {
     CHECK_CALL(tableDestory()); 
     PASS();
 }
-TEST tableStaticMem(void) {
+TEST tableStatic(void) {
     initStorSize = ArecordSize * 5;
     uint32_t storSize = initStorSize;
     CHECK_CALL(talbeAinit()); 
@@ -77,12 +77,43 @@ TEST tableStaticMem(void) {
     CHECK_CALL(tableDestory()); 
     PASS();
 }
+TEST tableReserve(void) {
+    initStorSize = 1;
+    CHECK_CALL(talbeAinit()); 
+    uint32_t storSize = ArecordSize * 5;;
+    table = sfsTableReserve(table, storSize);
+    ASSERT_EQ_FMT(ArecordSize, table->recordSize, "%d");
+    ASSERT_EQ_FMT(initStorSize, table->freeSpace, "%d");
+    ASSERT_EQ_FMT(0, table->recordNum, "%d");
+    ASSERT_EQ_FMT(0, table->varcharNum, "%d");
+    ASSERT_EQ_FMT(table->lastVarcharOffset, table->recordMetaOffset, "%d");
+    ASSERT_EQ_FMT(sizeof(AMeta_c), table->size - table->recordMetaOffset, "%d");
+    ASSERT_MEM_EQ(AMeta_c, (char*)table + table->recordMetaOffset , sizeof(AMeta_c));
+    A* addrs[5];
+    for(int i=0;i<5;i++){
+        ASSERT_EQ_FMT(storSize, table->freeSpace, "%d");
+        addrs[i] = sfsTableAddRecord(table);
+        storSize -= ArecordSize;
+        ASSERT_EQ_FMT(i+1, table->recordNum, "%d");
+    }
+    ASSERT_EQ_FMT(0, table->freeSpace, "%d");
+    ASSERT_EQ_FMT(0, (char*)addrs[0] - (char*)table->buf, "%d");
+    for(int i=1;i<5;i++){
+        ASSERT_EQ_FMT(ArecordSize, (char*)addrs[i] - (char*)addrs[i-1], "%d");
+    }
+    ASSERT_EQ_FMT(ArecordSize, table->lastVarcharOffset - ((char*)addrs[4] - (char*)table) , "%d");
+
+    CHECK_CALL(tableDestory()); 
+    PASS();
+}
 
 SUITE(table_suite) {
-    RUN_TEST(tableInitTest);
-    RUN_TEST(tableStaticMem);
+    RUN_TEST1 (tableInitTest, ArecordSize*1);
+    RUN_TEST1 (tableInitTest, ArecordSize*5);
+    RUN_TEST1 (tableInitTest, 1);
 
-
+    RUN_TEST (tableStatic);
+    RUN_TEST (tableReserve);
 }
 int main(int argc, char **argv){
     //    for(int i=0;i<A_meta->len;i++) printf("%d\n", A_meta->buf[i]); 
