@@ -16,18 +16,9 @@ typedef struct SFSTableHdr{
     uint32_t varcharNum;        /* number of varchars in the table */
     uint32_t recordNum;         /* number of record in the table */
     uint32_t recordSize;        /* size of a record */
-    union {
-        uint32_t offset;
-        struct SFSVarchar *ptr;
-    }recordMeta;  
-    union {
-        uint32_t offset;
-        struct SFSVarchar *ptr;
-    }lastVarchar;
-    union {
-        uint32_t offset;
-        struct SFSDatabase *ptr;
-    }database;
+    struct SFSVarchar *recordMeta;
+    struct SFSVarchar *lastVarchar;
+    struct SFSDatabase *database;
     char buf[];
 }SFSTableHdr;
 
@@ -38,10 +29,7 @@ typedef struct SFSDatabase{
     uint32_t size;      /* size of the file */
     uint8_t tableNum;   /* number of tables int the file (not more than 16)*/
     uint8_t pad[3];     /* reserved */
-    union{
-        uint32_t offset;
-        SFSTableHdr *ptr;
-    } table[16]; /* ptr/offset of tables */
+    SFSTableHdr *table[16]; /* ptr/offset of tables */
     char buf[];
 }SFSDatabase;
 
@@ -63,8 +51,8 @@ int sfsTableRelease(SFSTableHdr *table);
 int sfsTableReserve(SFSTableHdr **table, uint32_t storSize);
 
 void sfsTableForeach(SFSTableHdr *table, void (*fun)(SFSTableHdr*, void*));
-void* sfsTableAddRecord(SFSTableHdr **table);
-SFSVarchar* sfsTableAddVarchar(SFSTableHdr **table, uint32_t varcharLen, const char* src);
+void* sfsTableAddRecord(SFSTableHdr **ptable);
+SFSVarchar* sfsTableAddVarchar(SFSTableHdr **ptable, uint32_t varcharLen, const char* src);
 
 SFSDatabase* sfsDatabaseCreate(uint32_t storSize);
 void sfsDatabaseRelease(SFSDatabase* db);
