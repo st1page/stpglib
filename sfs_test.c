@@ -27,7 +27,7 @@ SFSVarchar *AMeta = (SFSVarchar *)AMeta_c;
     .buf = {1,4,0,10,0} */
 const uint32_t ArecordSize = sizeof(A);
 SFSDatabase *db = NULL;
-SFSTableHdr *table = NULL;
+SFSTable *table = NULL;
 uint32_t initStorSize = 0;
 
 static enum greatest_test_res talbeAinit(){

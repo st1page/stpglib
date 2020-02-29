@@ -9,7 +9,7 @@ typedef struct SFSVarchar{
     char buf[];
 }SFSVarchar;
 
-typedef struct SFSTableHdr{
+typedef struct SFSTable{
     uint32_t size;              /* size of the table */
     uint32_t storSize;         /* free space left in the table */
     uint32_t freeSpace;         /* free space left in the table */
@@ -20,7 +20,7 @@ typedef struct SFSTableHdr{
     struct SFSVarchar *lastVarchar;
     struct SFSDatabase *database;
     char buf[];
-}SFSTableHdr;
+}SFSTable;
 
 typedef struct SFSDatabase{
     uint32_t magic;     /* sfs magic number */
@@ -29,7 +29,7 @@ typedef struct SFSDatabase{
     uint32_t size;      /* size of the file */
     uint8_t tableNum;   /* number of tables int the file (not more than 16)*/
     uint8_t pad[3];     /* reserved */
-    SFSTableHdr *table[16]; /* ptr/offset of tables */
+    SFSTable *table[16]; /* ptr/offset of tables */
     char buf[];
 }SFSDatabase;
 
@@ -37,7 +37,7 @@ typedef struct SFSDatabase{
 inline void sfsCompileTest(){
     BUILD_BUG_ON(__SIZEOF_POINTER__ != 4);
     BUILD_BUG_ON(sizeof(SFSVarchar) != 4);
-    BUILD_BUG_ON(sizeof(SFSTableHdr) != 36);
+    BUILD_BUG_ON(sizeof(SFSTable) != 36);
     BUILD_BUG_ON(sizeof(SFSDatabase) != 84);
 }
 
@@ -45,19 +45,19 @@ int sfsVarcharCons(SFSVarchar *varchar, const char* src);
 SFSVarchar* sfsVarcharCreate(uint32_t varcharSize, const char* src);
 int sfsVarcharRelease(SFSVarchar *varchar);
 
-int sfsTableCons(SFSTableHdr *table, uint32_t initStorSize, const SFSVarchar *recordMeta, SFSDatabase *db);
-SFSTableHdr* sfsTableCreate(uint32_t initStorSize, const SFSVarchar *recordMeta, SFSDatabase *db);
-int sfsTableRelease(SFSTableHdr *table);
-int sfsTableReserve(SFSTableHdr **table, uint32_t storSize);
+int sfsTableCons(SFSTable *table, uint32_t initStorSize, const SFSVarchar *recordMeta, SFSDatabase *db);
+SFSTable* sfsTableCreate(uint32_t initStorSize, const SFSVarchar *recordMeta, SFSDatabase *db);
+int sfsTableRelease(SFSTable *table);
+int sfsTableReserve(SFSTable **table, uint32_t storSize);
 
-void* sfsTableAddRecord(SFSTableHdr **ptable);
-SFSVarchar* sfsTableAddVarchar(SFSTableHdr **ptable, uint32_t varcharLen, const char* src);
+void* sfsTableAddRecord(SFSTable **ptable);
+SFSVarchar* sfsTableAddVarchar(SFSTable **ptable, uint32_t varcharLen, const char* src);
 
 SFSDatabase* sfsDatabaseCreate(uint32_t storSize);
 void sfsDatabaseRelease(SFSDatabase* db);
 int sfsDatabaseSave(char *fileName, SFSDatabase* db);
 SFSDatabase* sfsDatabaseCreateLoad(char *fileName);
-SFSTableHdr* sfsDatabaseAddTable(SFSDatabase *db, uint32_t storSize, const SFSVarchar *recordMeta);
+SFSTable* sfsDatabaseAddTable(SFSDatabase *db, uint32_t storSize, const SFSVarchar *recordMeta);
 
 
 // return the last err
