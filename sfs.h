@@ -50,7 +50,6 @@ SFSTableHdr* sfsTableCreate(uint32_t initStorSize, const SFSVarchar *recordMeta,
 int sfsTableRelease(SFSTableHdr *table);
 int sfsTableReserve(SFSTableHdr **table, uint32_t storSize);
 
-void sfsTableForeach(SFSTableHdr *table, void (*fun)(SFSTableHdr*, void*));
 void* sfsTableAddRecord(SFSTableHdr **ptable);
 SFSVarchar* sfsTableAddVarchar(SFSTableHdr **ptable, uint32_t varcharLen, const char* src);
 
