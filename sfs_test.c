@@ -42,6 +42,12 @@ static enum greatest_test_res tableDestory(){
     PASS();
 }
 
+uint32_t ptrOffset(void *x, void *y){
+    return (char*)y > (char*)x ?
+            (char*)y - (char*)x:
+            (char*)x - (char*)y;
+}
+
 TEST tableInitTest(uint32_t StorSize) {
     initStorSize = StorSize;
     CHECK_CALL(talbeAinit()); 
@@ -49,9 +55,12 @@ TEST tableInitTest(uint32_t StorSize) {
     ASSERT_EQ_FMT(initStorSize, table->freeSpace, "%d");
     ASSERT_EQ_FMT(0, table->recordNum, "%d");
     ASSERT_EQ_FMT(0, table->varcharNum, "%d");
-    ASSERT_EQ_FMT(table->lastVarcharOffset, table->recordMetaOffset, "%d");
-    ASSERT_EQ_FMT(sizeof(AMeta_c), table->size - table->recordMetaOffset, "%d");
-    ASSERT_MEM_EQ(AMeta_c, (char*)table + table->recordMetaOffset , sizeof(AMeta_c));
+    uint32_t lastVarcharOffset = ptrOffset(table, table->lastVarchar);
+    uint32_t recordMetaOffset = ptrOffset(table, table->recordMeta);
+
+    ASSERT_EQ_FMT(lastVarcharOffset, recordMetaOffset, "%d");
+    ASSERT_EQ_FMT(sizeof(AMeta_c), table->size - recordMetaOffset, "%d");
+    ASSERT_MEM_EQ(AMeta_c, (char*)table + recordMetaOffset , sizeof(AMeta_c));
     CHECK_CALL(tableDestory()); 
     PASS();
 }
@@ -63,16 +72,17 @@ TEST tableStatic(void) {
     A* addrs[5];
     for(int i=0;i<5;i++){
         ASSERT_EQ_FMT(storSize, table->freeSpace, "%d");
-        addrs[i] = sfsTableAddRecord(table);
+        addrs[i] = sfsTableAddRecord(&table);
         storSize -= ArecordSize;
         ASSERT_EQ_FMT(i+1, table->recordNum, "%d");
     }
     ASSERT_EQ_FMT(0, table->freeSpace, "%d");
     ASSERT_EQ_FMT(0, (char*)addrs[0] - (char*)table->buf, "%d");
     for(int i=1;i<5;i++){
-        ASSERT_EQ_FMT(ArecordSize, (char*)addrs[i] - (char*)addrs[i-1], "%d");
+        ASSERT_EQ_FMT(ArecordSize, ptrOffset(addrs[i], addrs[i-1]), "%d");
     }
-    ASSERT_EQ_FMT(ArecordSize, table->lastVarcharOffset - ((char*)addrs[4] - (char*)table) , "%d");
+    uint32_t lastVarcharOffset = ptrOffset(table, table->lastVarchar);
+    ASSERT_EQ_FMT(ArecordSize, ptrOffset(table->lastVarchar, addrs[4]) , "%d");
 
     CHECK_CALL(tableDestory()); 
     PASS();
@@ -81,18 +91,21 @@ TEST tableReserve(void) {
     initStorSize = 1;
     CHECK_CALL(talbeAinit()); 
     uint32_t storSize = ArecordSize * 5;;
-    table = sfsTableReserve(table, storSize);
+    sfsTableReserve(&table, storSize);
     ASSERT_EQ_FMT(ArecordSize, table->recordSize, "%d");
-    ASSERT_EQ_FMT(initStorSize, table->freeSpace, "%d");
+    ASSERT_EQ_FMT(storSize, table->freeSpace, "%d");
     ASSERT_EQ_FMT(0, table->recordNum, "%d");
     ASSERT_EQ_FMT(0, table->varcharNum, "%d");
-    ASSERT_EQ_FMT(table->lastVarcharOffset, table->recordMetaOffset, "%d");
-    ASSERT_EQ_FMT(sizeof(AMeta_c), table->size - table->recordMetaOffset, "%d");
-    ASSERT_MEM_EQ(AMeta_c, (char*)table + table->recordMetaOffset , sizeof(AMeta_c));
+    uint32_t lastVarcharOffset = ptrOffset(table, table->lastVarchar);
+    uint32_t recordMetaOffset = ptrOffset(table, table->recordMeta);
+
+    ASSERT_EQ_FMT(lastVarcharOffset, recordMetaOffset, "%d");
+    ASSERT_EQ_FMT(sizeof(AMeta_c), table->size - recordMetaOffset, "%d");
+    ASSERT_MEM_EQ(AMeta_c, (char*)table + recordMetaOffset , sizeof(AMeta_c));
     A* addrs[5];
     for(int i=0;i<5;i++){
         ASSERT_EQ_FMT(storSize, table->freeSpace, "%d");
-        addrs[i] = sfsTableAddRecord(table);
+        addrs[i] = sfsTableAddRecord(&table);
         storSize -= ArecordSize;
         ASSERT_EQ_FMT(i+1, table->recordNum, "%d");
     }
@@ -101,7 +114,7 @@ TEST tableReserve(void) {
     for(int i=1;i<5;i++){
         ASSERT_EQ_FMT(ArecordSize, (char*)addrs[i] - (char*)addrs[i-1], "%d");
     }
-    ASSERT_EQ_FMT(ArecordSize, table->lastVarcharOffset - ((char*)addrs[4] - (char*)table) , "%d");
+    ASSERT_EQ_FMT(ArecordSize, ptrOffset(table->lastVarchar, addrs[4]) , "%d");
 
     CHECK_CALL(tableDestory()); 
     PASS();
